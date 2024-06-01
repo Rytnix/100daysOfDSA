@@ -23,6 +23,9 @@ authenticate_github() {
 
   read -p "Select an account by number: " account_number
   selected_account=$(gh auth status --show-token 2>&1 | grep "Logged in to" | awk "NR==$account_number{print \$7}")
+    selected_account_token=$(gh auth status --show-token 2>&1 | awk -v account_number=$account_number '
+/Logged in to github.com account/ {account_line++; if (account_line == account_number) account=$7}
+account_line == account_number && /Token:/ {print $3; exit}')  
 
   if [ -z "$selected_account" ]; then
     echo "Invalid selection. Exiting."
@@ -30,7 +33,7 @@ authenticate_github() {
   fi
 
   echo "Switching to account: $selected_account"
-  gh auth login --with-token <<< $(gh auth token)
+  gh auth login --with-token <<< $selected_account_token
 }
 
 # Function to select user configuration

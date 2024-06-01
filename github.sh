@@ -56,10 +56,33 @@ initialize_git_repo() {
   fi
 }
 
+# Function to list repositories
+list_repositories() {
+  gh repo list --json name --jq '.[].name'
+}
+
+# Function to search repositories in real-time using fzf
+search_repositories() {
+  repos=$(list_repositories)
+  if [ -z "$repos" ]; then
+    echo "No repositories found."
+    exit 1
+  fi
+
+  echo "Select a repository:"
+  selected_repo=$(echo "$repos" | fzf --height 40% --border --preview "gh repo view {}")
+
+  if [ -z "$selected_repo" ]; then
+    echo "No repository selected."
+    exit 1
+  fi
+
+  echo "Selected repository: $selected_repo"
+  repo_name="$selected_repo"
+}
+
 # Function to commit and push changes to GitHub
 commit_and_push() {
-  read -p "Enter the repository name: " repo_name
-
   echo "Checking if the repository '$repo_name' exists..."
   if gh repo view "$repo_name" > /dev/null 2>&1; then
     echo "Repository found."
@@ -87,6 +110,7 @@ create_new_repo() {
     exit 1
   fi
   echo "Repository '$new_repo_name' created successfully."
+  repo_name="$new_repo_name"
 }
 
 # Main script execution
@@ -101,6 +125,7 @@ read -p "Do you want to create a new repository or use an existing one? (create/
 if [ "$repo_choice" == "create" ]; then
   create_new_repo
 else
+  search_repositories
   commit_and_push
 fi
 
